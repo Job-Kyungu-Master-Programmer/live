@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const Model = require('./Model/Model')
 //MiddleWare
 app.use(express.json())
 app.use(express.static('build'))
@@ -38,38 +40,49 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/courses', (request,response) => {
-    response.json(courses)
+    Model.find({}).then(cours => {
+        response.json(cours)
+    })
 })
 
-app.get('/api/courses/:id', (request,response) => {
-    const courseId = Number(request.params.id)
-    const course = courses.find(course => course.id == courseId)
-    response.json(course)
+app.get('/api/courses/:id', (request, response) => {
+    Model.findById(request.params.id)
+    .then(result => {
+        response.json(result)
+    })
 })
 
 app.delete('/api/courses/:id', (request,response) => {
-    const courseId = Number(request.params.id)
-    const course   = courses.filter(course => course.id !== courseId)
-    response.json(course)
+    Model.findByIdAndDelete(request.params.id)
+    .then(result => {
+        response.json(result)
+    })
 })
 
-const generate = () => {
-    const genMax = courses.length > 0 ?
-    Math.random(...courses.map(c => c.id)) : 0
-    return genMax + 1
-}
-
-app.post('/api/courses', (request,response) => {
+app.post('/api/courses', (request, response) => {
     const body = request.body
 
-    const course = {
+    const course = new Model({
+        title : body.title,
+        important: body.important || false
+    })
+
+    course.save().then(savedCourse => {
+         response.json(savedCourse)
+    })
+})
+
+app.put('/api/courses/:id' , (request, response) => {
+    const body = request.body
+
+    const courseUpdate = {
         title: body.title,
-        important: body.important || false,
-        id: generate()
+        important: body.important
     }
 
-    courses = courses.concat(course)
-    response.json(course)
+    Model.findByIdAndUpdate(request.params.id, courseUpdate, {new: true}).then(result => {
+         response.json(result)
+    })
 })
 
 const PORT = process.env.PORT || 3002
